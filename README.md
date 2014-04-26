@@ -16,5 +16,5 @@ The code is compiled down to JVM byte code (using ASM), and then executed. Parsi
 About the language
 ------------------
 
-ISETL is a toy language, too. It has first class functions, closures with lexical scope, kind of array/list destructuring, and many other fun features.
+ISETL is a dynamically typed language with first class functions, closures with lexical scope, kind of array/list destructuring, list comprehensions, and many other fun features.
 
