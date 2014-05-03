@@ -19,12 +19,10 @@ case class StringVal(final val value: String)
 	override def typeName = "String"
 	override def toString = "\"" + value.replaceAll("[\"\\\\]", "\\\\$1") + "\"";
 
-	implicit private def mkVal(s:String) = new StringVal(s)
-	
 	override def add(_rhs : BaseVal) : BaseVal = {
 		if (_rhs.isInstanceOf[StringVal]) {
 			val rhs = _rhs.asInstanceOf[StringVal]
-			return value + rhs.value
+			return new StringVal(value + rhs.value)
 		}
 		super.add(_rhs)
 	}
@@ -45,7 +43,7 @@ case class StringVal(final val value: String)
 			if (rhs.value < 0) {
 				throw new ExecuteException("Invalid multiplier");
 			}
-			mul0(value, "", rhs.value)
+			new StringVal(mul0(value, "", rhs.value))
 		} else {
 			super.sub(_rhs)
 		}

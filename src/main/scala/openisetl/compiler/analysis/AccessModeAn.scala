@@ -19,7 +19,7 @@ object AccessModeAn {
 	val store = Store()
 	val loadStore = LoadStore()
 	
-	val accessMode = 0;
+	val accessMode = 0
 }
 
 class AccessModeAn extends DeepVisitorAdapter with AnDataHolderClient {
@@ -33,16 +33,13 @@ class AccessModeAn extends DeepVisitorAdapter with AnDataHolderClient {
 	}
 	
 	override def walkLvalue(l:Lvalue) : Unit = l match {
-		case IdentifierLvalue(i) => {
-			setAccessMode(i, AccessModeAn.store)
-		}
-		case DimLvalue(IdentifierLvalue(i),dim) => {
+		case IdentifierLvalue(i) =>
+      setAccessMode(i, AccessModeAn.store)
+    case DimLvalue(IdentifierLvalue(i),dim) =>
 			setAccessMode(i, AccessModeAn.loadStore)
 			super.walkExpr(dim)
-		}
-		case Rlvalue(i) => {
+		case Rlvalue(i) =>
 			setAccessMode(i, AccessModeAn.loadStore)
-		}
 		case _ => super.walkLvalue(l)
 	}
 	

@@ -13,22 +13,17 @@ final case class IntegerVal(final val value:Int)
 	
 	override def typeName = "Integer"
 	override def toString = value.toString
-	
-	implicit private def mkVal(i:Int) = new IntegerVal(i)
-	implicit private def mkVal(i:Double) = new RealVal(i)
-	implicit private def mkBigInteger(i:Int) = BigInteger.valueOf(i)
-	implicit private def mkBigInteger(i:Long) = BigInteger.valueOf(i)
-		
+
 	override def add(_rhs : BaseVal) : BaseVal = _rhs match {
 		case IntegerVal(other_value) => {
 			val r = value.asInstanceOf[Long] + other_value.asInstanceOf[Long]
 			if (r > Integer.MAX_VALUE || r < Integer.MIN_VALUE) {
-				new BignumVal(r)
+				new BignumVal(java.math.BigInteger.valueOf(r))
 			} else {
 				new IntegerVal(r.asInstanceOf[Int])
 			}
 		}
-		case RealVal(other_value) => value + other_value
+		case RealVal(other_value) => new RealVal(value + other_value)
 		case _ => super.add(_rhs)
 	}
 	
@@ -36,29 +31,29 @@ final case class IntegerVal(final val value:Int)
 		case IntegerVal(other_value) => {
 			val r = value.asInstanceOf[Long] - other_value.asInstanceOf[Long]
 			if (r > Integer.MAX_VALUE || r < Integer.MIN_VALUE) {
-				new BignumVal(r)
+				new BignumVal(java.math.BigInteger.valueOf(r))
 			} else {
 				new IntegerVal(r.asInstanceOf[Int])
 			}
 		}
-		case RealVal(other_value) => value - other_value
+		case RealVal(other_value) => new RealVal(value - other_value)
 		case _ => super.sub(_rhs)
 	}
 	
 	override def mul(_rhs : BaseVal) : BaseVal = _rhs match {
-		case IntegerVal(other_value) => value * other_value
-		case RealVal(other_value) => value * other_value
+		case IntegerVal(other_value) => new RealVal(value * other_value)
+		case RealVal(other_value) => new RealVal(value * other_value)
 		case _ => super.mul(_rhs)
 	}
 	
 	override def div(_rhs : BaseVal) : BaseVal = _rhs match {
-		case IntegerVal(other_value) => value.asInstanceOf[Double] / other_value.asInstanceOf[Double]
-		case RealVal(other_value) => value / other_value
+		case IntegerVal(other_value) => new RealVal(value.asInstanceOf[Double] / other_value.asInstanceOf[Double])
+		case RealVal(other_value) => new RealVal(value / other_value)
 		case _ => super.div(_rhs)
 	}
 	
 	override def mod(_rhs : BaseVal) : BaseVal = _rhs match {
-		case IntegerVal(other_value) => value % other_value
+		case IntegerVal(other_value) => new IntegerVal(value % other_value)
 		case _ => super.mod(_rhs)
 	}
 	
@@ -99,30 +94,27 @@ final case class RealVal(final val value:Double)
 	override def typeName = "Real"
 	override def toString = value.toString
 	
-	implicit private def mkVal(i:Int) = new IntegerVal(i)
-	implicit private def mkVal(i:Double) = new RealVal(i) 
-	
 	override def add(_rhs : BaseVal) : BaseVal = _rhs match {
-		case RealVal(other_value) => value + other_value
-		case IntegerVal(other_value) => value + other_value
+		case RealVal(other_value) => new RealVal(value + other_value)
+		case IntegerVal(other_value) => new RealVal(value + other_value)
 		case _ => super.add(_rhs)
 	}
 	
 	override def sub(_rhs : BaseVal) : BaseVal = _rhs match {
-		case RealVal(other_value) => value - other_value
-		case IntegerVal(other_value) => value - other_value
+		case RealVal(other_value) => new RealVal(value - other_value)
+		case IntegerVal(other_value) => new RealVal(value - other_value)
 		case _ => super.sub(_rhs)
 	}
 	
 	override def mul(_rhs : BaseVal) : BaseVal = _rhs match {
-		case RealVal(other_value) => value * other_value
-		case IntegerVal(other_value) => value * other_value
+		case RealVal(other_value) => new RealVal(value * other_value)
+		case IntegerVal(other_value) => new RealVal(value * other_value)
 		case _ => super.mul(_rhs)
 	}
 	
 	override def div(_rhs : BaseVal) : BaseVal = _rhs match {
-		case RealVal(other_value) => value / other_value
-		case IntegerVal(other_value) => value / other_value
+		case RealVal(other_value) => new RealVal(value / other_value)
+		case IntegerVal(other_value) => new RealVal(value / other_value)
 		case _ => super.div(_rhs)
 	}
 	
@@ -149,18 +141,13 @@ final case class RealVal(final val value:Double)
 
 final case class BignumVal(final val value:java.math.BigInteger)
 	extends GenericBaseVal {
-	
+
 	override def typeName = "Bignum"
 	override def toString = value.toString
-	
-	implicit private def mkVal(i:Int) = new IntegerVal(i)
-	implicit private def mkVal(i:Double) = new RealVal(i) 
-	implicit private def mkVal(i:BigInteger) = new BignumVal(i)
-	
+
 	override def add(_rhs : BaseVal) : BaseVal = _rhs match {
-		case b : BignumVal => value.add(b.value)
-		case IntegerVal(other_value) => value.add(BigInteger.valueOf(other_value))
+		case b : BignumVal => new BignumVal(value.add(b.value))
+		case IntegerVal(other_value) => new BignumVal(value.add(BigInteger.valueOf(other_value)))
 		case _ => super.add(_rhs)
-	}
-	
+  }
 }

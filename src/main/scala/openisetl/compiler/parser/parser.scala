@@ -11,10 +11,12 @@ import java.io.File
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.PackratParsers
 import scala.collection.immutable.List
+import scala.language.postfixOps
+import scala.language.implicitConversions /*FIXME*/
 
 import openisetl.compiler.node._
 
-class OpenisetlParser extends StandardTokenParsers with PackratParsers with Application {
+class OpenisetlParser extends StandardTokenParsers with PackratParsers {
 	
   lexical.reserved += (
 		  "func","proc","local","return",
@@ -109,7 +111,7 @@ class OpenisetlParser extends StandardTokenParsers with PackratParsers with Appl
 		  | ifStmt
 		  | forStmt
   )
-  
+
   lazy val localstmt = (
 		  "local" ~ rep1sep(ident, ",") <~ ";" 
 		  ^^ { case _ ~  l => LocalStmt(l.map(Identifier(_))) }
@@ -154,7 +156,7 @@ class OpenisetlParser extends StandardTokenParsers with PackratParsers with Appl
 		  	~ fun_stmts <~
 		  "end"
   )
-  
+
   lazy val funcDecl = (
 		  (("func" ~> func0 <~ "func") | ("proc" ~> func0 <~ "proc"))
 		  ^^ {

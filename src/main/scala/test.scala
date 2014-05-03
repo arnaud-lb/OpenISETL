@@ -17,6 +17,7 @@ object test {
 	import openisetl.runtime.func._
 	import openisetl.runtime._val.{BaseVal,BaseValRef,FuncVal}
 	import openisetl.runtime.ExecuteException
+  import scala.language.implicitConversions
 	
 	implicit def val2valref(v:BaseVal) = new BaseValRef(v)
 	
@@ -34,7 +35,7 @@ object test {
 			case parser.Success(tree, _) => tree
 			case e: parser.NoSuccess => {
 				Console.err.println(e)
-				exit(100)
+				sys.exit(100)
 			}
 		}
 		var fun = FuncDeclExpr(List(), tree)

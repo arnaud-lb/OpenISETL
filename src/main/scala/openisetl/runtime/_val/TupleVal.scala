@@ -41,15 +41,13 @@ case class TupleVal(final val value: TupleVal.valueType)
 	
 	override def typeName = "Tuple"
 	override def toString = value.mkString("[", ",", "]")
-	
-	implicit private def mkVal(s:TupleVal.valueType) = new TupleVal(s)
-	
+
 	override def add(_rhs : BaseVal) : BaseVal = _rhs match {
-		case TupleVal(other_value) => value ++ other_value
+		case TupleVal(other_value) => new TupleVal(value ++ other_value)
 		case _ => super.add(_rhs)
 	}
 	
-	override def _with(_rhs : BaseVal) : TupleVal = value :+ _rhs
+	override def _with(_rhs : BaseVal) : TupleVal = new TupleVal(value :+ _rhs)
 	
 	override def head : BaseVal = {
 		if (value.isEmpty) UndefinedVal.undefined
@@ -57,8 +55,8 @@ case class TupleVal(final val value: TupleVal.valueType)
 	}
 	
 	override def tail : BaseVal = {
-		if (value.isEmpty) value
-		else value.tail
+		if (value.isEmpty) new TupleVal(value)
+		else new TupleVal(value.tail)
 	}
 	
 	override def last : BaseVal = {
@@ -67,8 +65,8 @@ case class TupleVal(final val value: TupleVal.valueType)
 	}
 	
 	override def init : BaseVal = {
-		if (value.isEmpty) value
-		else value.init
+		if (value.isEmpty) new TupleVal(value)
+		else new TupleVal(value.init)
 	}
 	
 	override def index(_index:BaseVal) : BaseVal = _index match {
@@ -83,8 +81,8 @@ case class TupleVal(final val value: TupleVal.valueType)
 	override def updated(_index:BaseVal, _val:BaseVal) : BaseVal = _index match {
 		case IntegerVal(i) => {
 			if (i < 1) throw new ExecuteException("Invalid index");
-			if (i > value.size) value.padTo(i-1, UndefinedVal.undefined) :+ _val
-			else value.updated(i-1, _val)
+			if (i > value.size) new TupleVal(value.padTo(i-1, UndefinedVal.undefined) :+ _val)
+			else new TupleVal(value.updated(i-1, _val))
 		}
 		case _ =>	super.updated(_index, _val)
 	}
@@ -111,7 +109,7 @@ case class TupleVal(final val value: TupleVal.valueType)
 			case x:UndefinedVal => value.size
 			case _ => return super.slice(_start,_end)
 		}
-		value.slice(start, end)
+		new TupleVal(value.slice(start, end))
 	}
 	
 	override def in(lhs:BaseVal) = value contains lhs

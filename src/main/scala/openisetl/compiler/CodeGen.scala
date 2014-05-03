@@ -16,6 +16,7 @@ import openisetl.runtime.annotations.{Upvar,Function}
 import org.objectweb.asm.{Type,ClassVisitor,ClassWriter,FieldVisitor,Opcodes}
 import org.objectweb.asm.util.{CheckClassAdapter,TraceClassVisitor}
 import org.objectweb.asm.commons.{Method,GeneratorAdapter}
+import scala.language.implicitConversions /*FIXME*/
 
 object CodeGen {
 	
@@ -28,22 +29,22 @@ object CodeGen {
 		uniq += 1
 		
 		val classType = Type.getObjectType("openisetl/runtime/func/UserFunc$" + uniq)
-		val writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+		val writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES)
 		var clazz : ClassVisitor = writer
 		clazz = new CheckClassAdapter(clazz)
 		// clazz = new TraceClassVisitor(clazz, new PrintWriter(System.err,true))
 		
 		clazz.visit(Opcodes.V1_6, Opcodes.ACC_PUBLIC, 
 				classType.getInternalName, null, 
-				Type.getType(classOf[FuncVal]).getInternalName, Array.empty);
+				Type.getType(classOf[FuncVal]).getInternalName, Array.empty)
 		
 		val ann = clazz.visitAnnotation(
 				Type.getType(classOf[Function]).getDescriptor, true)
 		fun.params.foldLeft(ann.visitArray("parameters")) { case (a, Identifier(name)) =>
 			a.visit(null, name)
 			a
-		}.visitEnd
-		ann.visitEnd
+		}.visitEnd()
+		ann.visitEnd()
 		
 		val main = mkGen(mkMainMethod(fun), clazz)
 		new CodeGen(fun, writer, clazz, classType, main, accessModeAn, symAn)
@@ -97,12 +98,12 @@ class CodeGen private (
 	}
 	
 	var upvars = Map.empty[Sym, String]
-	var literals = Map.empty[(Class[T] forSome { type T <: BaseVal; }, Any), String]
+	var literals = Map.empty[(Class[T] forSome { type T <: BaseVal }, Any), String]
 	
 	val clinit = CodeGen.mkGen(
 			new Method("<clinit>", Type.VOID_TYPE, Array[Type]()), 
 			clazz)
-	clinit.visitCode
+	clinit.visitCode()
 
 	def run : Class[FuncVal] = {
 		
@@ -116,40 +117,39 @@ class CodeGen private (
 					CodeGen.upvarDesc, null, null)
 			val ann = fv.visitAnnotation(Type.getType(classOf[Upvar]).getDescriptor, true)
 			ann.visit("name", sym.name)
-			ann.visitEnd
-			fv.visitEnd
+			ann.visitEnd()
+			fv.visitEnd()
 			
 			n + 1
 		}
 		
-		createInitClosureMeth
-		createInit1Meth
-		createFuncNameMeth
-		createParamCountMeth
-		createGetUpvarMeth
+		createInitClosureMeth()
+		createInit1Meth()
+		createFuncNameMeth()
+		createParamCountMeth()
+		createGetUpvarMeth()
 		
-		main.visitCode
+		main.visitCode()
 
 		val symTab = symAn.getSymTab(fun).get
 		
 		val nlocals = symTab.deepSize - fun.params.size
 		if (nlocals > 0) {
 			main.getStatic(classOf[BaseValRef], "undefined", classOf[UndefinedVal])
-			for (i <- 1 until nlocals) main.dup
+			for (i <- 1 until nlocals) main.dup()
 		}
 			
 		symTab.deepFoldLeft(0) { case (n, (name, sym)) =>
 			sym match {
-				case Sym(_, _, Sym.Param(), None) => { 
+				case Sym(_, _, Sym.Param(), None) =>
 					sym.physAddr = n
 					n + 1
-				}
-				case Sym(_, _, Sym.Param(), Some(upvar)) => {
+				case Sym(_, _, Sym.Param(), Some(upvar)) =>
 					sym.kind = Sym.local
 					sym.physAddr = main.newLocal(CodeGen.varType)
 					
 					main.newInstance(classOf[BaseValRef])
-					main.dup // jvm does not like dup2 here
+					main.dup() // jvm does not like dup2 here
 					main.invokeConstructor(classOf[BaseValRef],
 							classOf[BaseValRef].getConstructor())
 					main.storeLocal(sym.physAddr)
@@ -158,24 +158,24 @@ class CodeGen private (
 					main.putField(CodeGen.upvarType , "ref", CodeGen.varType)
 					
 					n + 1
-				}
-				case Sym(_, _, Sym.Local(), None) => {
+
+				case Sym(_, _, Sym.Local(), None) =>
 					sym.physAddr = main.newLocal(CodeGen.varType)
 					main.storeLocal(sym.physAddr)
 					n
-				}
-				case Sym(_, _, Sym.Local(), Some(upvar)) => {
+
+				case Sym(_, _, Sym.Local(), Some(upvar)) =>
 					sym.physAddr = main.newLocal(CodeGen.varType)
 					main.newInstance(classOf[BaseValRef])
-					main.dup // jvm does not like dup2 here
+					main.dup() // jvm does not like dup2 here
 					main.invokeConstructor(classOf[BaseValRef],
 							classOf[BaseValRef].getConstructor())
 					main.storeLocal(sym.physAddr)
 					main.loadLocal(sym.physAddr)
-					main.swap
+					main.swap()
 					main.putField(CodeGen.upvarType , "ref", CodeGen.varType)
 					n
-				}
+
 				case Sym(_, _, Sym.Upvar(), _) => throw new Error()
 			}
 		}
@@ -183,13 +183,13 @@ class CodeGen private (
 		walkStmts(fun.stmts)
 		
 		main.getStatic(classOf[BaseValRef], "undefined", classOf[UndefinedVal])
-		main.returnValue
+		main.returnValue()
 		finalizeMeth(main)
 		
-		clinit.returnValue
+		clinit.returnValue()
 		finalizeMeth(clinit)
 		
-		clazz.visitEnd
+		clazz.visitEnd()
 		
 		System.err.println("</run>")
 
@@ -197,25 +197,25 @@ class CodeGen private (
 			.asInstanceOf[Class[FuncVal]]
 	}
 	
-	def createFuncNameMeth {
+	def createFuncNameMeth() {
 		val funcName = CodeGen.mkGen(FuncVal.funcName, clazz)
 		
-		funcName.visitCode
+		funcName.visitCode()
 		funcName.push("anon")
-		funcName.returnValue
+		funcName.returnValue()
 		finalizeMeth(funcName)
 	}
 	
-	def createParamCountMeth {
+	def createParamCountMeth() {
 		val paramCount = CodeGen.mkGen(FuncVal.paramCount, clazz)
 		
-		paramCount.visitCode
+		paramCount.visitCode()
 		if (fun.params.size > BaseVal.maxParams) {
 			paramCount.push(-1)
 		} else {
 			paramCount.push(fun.params.size)
 		}
-		paramCount.returnValue
+		paramCount.returnValue()
 		finalizeMeth(paramCount)
 	}
 	
@@ -224,43 +224,43 @@ class CodeGen private (
 				CodeGen.upvarType).toArray
 		val m = CodeGen.mkGen(new Method("<init>", Type.VOID_TYPE, 
 				types), clazz)
-		m.visitCode
-		m.loadThis
+		m.visitCode()
+		m.loadThis()
 		m.invokeConstructor(classOf[FuncVal], FuncVal.init0)
 
 		upvars.foldLeft(0) { case (n, (sym, field)) =>
-			m.loadThis
+			m.loadThis()
 			m.loadArg(n)
 			m.putField(selfType, field, CodeGen.upvarType)
 			n + 1
 		}
 
-		m.returnValue
+		m.returnValue()
 		finalizeMeth(m)
 	}
 	
 	def createInit1Meth() {
 		val m = CodeGen.mkGen(FuncVal.init1, clazz)
-		m.visitCode
-		m.loadThis
+		m.visitCode()
+		m.loadThis()
 		m.invokeConstructor(classOf[FuncVal], FuncVal.init0)
 
 		upvars.foreach { case (sym, field) =>
-			m.loadThis
-			m.dup
+			m.loadThis()
+			m.dup()
 			m.push(sym.name)
 			m.loadArg(0)
 			m.invokeVirtual(classOf[FuncVal], FuncVal.getUpvarFrom)
 			m.putField(selfType, field, CodeGen.upvarType)
 		}
 
-		m.returnValue
+		m.returnValue()
 		finalizeMeth(m)
 	}
 	
 	def createGetUpvarMeth() {
 		val m = CodeGen.mkGen(FuncVal.getUpvar, clazz)
-		m.visitCode
+		m.visitCode()
 		
 		upvars.foreach { case (sym, field) =>
 			val nextL = m.newLabel
@@ -270,24 +270,24 @@ class CodeGen private (
 			m.invokeVirtual(classOf[Object], 
 					classOf[Object].getMethod("equals", classOf[Object]))
 			m.visitJumpInsn(Opcodes.IFEQ, nextL)
-			m.loadThis
+			m.loadThis()
 			m.getField(selfType, upvars.get(sym).get,
 					CodeGen.upvarType)
-			m.returnValue
+			m.returnValue()
 
 			m.mark(nextL)
 		}
 		
-		m.loadThis
+		m.loadThis()
 		m.loadArg(0)
 		invokeSuper(m, classOf[FuncVal], FuncVal.getUpvar)
-		m.returnValue
+		m.returnValue()
 		
 		finalizeMeth(m)
 	}
 	
 	def pushNull(g:GeneratorAdapter) {
-		g.visitInsn(Opcodes.ACONST_NULL);
+		g.visitInsn(Opcodes.ACONST_NULL)
 	}
 	
 	def invokeSuper(g:GeneratorAdapter, sup:Type, m:Method) {
@@ -297,10 +297,10 @@ class CodeGen private (
 	
 	def finalizeMeth(m:GeneratorAdapter) {
 		m.visitMaxs(20,20)
-		m.visitEnd
+		m.visitEnd()
 	}
 	
-	def loadUndefined {
+	def loadUndefined() {
 		main.getStatic(classOf[BaseValRef], "undefined", classOf[UndefinedVal])
 	}
 	
@@ -315,25 +315,24 @@ class CodeGen private (
 	def literalFieldFor[T <: BaseVal](c:Class[T], v:Any)(init:(String) => Unit) : String = {
 		literals.get((c, v)) match {
 			case Some(name) => name
-			case None => {
+			case None =>
 				val name = "$literal$$" + literals.size
 				literals += ((c,v) -> name)
 				
 				clazz.visitField(Opcodes.ACC_PRIVATE | 
 						Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
-						name, Type.getType(c).getDescriptor, null, null).visitEnd
+						name, Type.getType(c).getDescriptor, null, null).visitEnd()
 
 				init(name)
 				
 				name
-			}
 		}
 	}
 	
 	def loadInteger(i:Int) {
 		val field = literalFieldFor(classOf[IntegerVal], i) { name =>
 			clinit.newInstance(classOf[IntegerVal])
-			clinit.dup
+			clinit.dup()
 			clinit.push(i)
 			clinit.invokeConstructor(classOf[IntegerVal], 
 					classOf[IntegerVal].getConstructor(classOf[Int]))
@@ -345,7 +344,7 @@ class CodeGen private (
 	def loadString(s:String) {
 		val field = literalFieldFor(classOf[StringVal], s) { name =>
 			clinit.newInstance(classOf[StringVal])
-			clinit.dup
+			clinit.dup()
 			clinit.push(s)
 			clinit.invokeConstructor(classOf[StringVal], 
 					classOf[StringVal].getConstructor(classOf[String]))
@@ -355,12 +354,12 @@ class CodeGen private (
 	}
 	
 	override def outUndefinedConst(e:UndefinedConst) {
-		loadUndefined
+		loadUndefined()
 	}
 	
 	override def outBooleanConst(e:BooleanConst) = e.text match {
-		case "true" => loadTrue
-		case "false" => loadFalse
+		case "true" => loadTrue()
+		case "false" => loadFalse()
 	}
 	
 	override def outIntegerConst(e:IntegerConst) {
@@ -373,14 +372,14 @@ class CodeGen private (
 	
 	override def visitBinopExpr(e:BinopExpr) {
 		e.op match {
-			case op @ ArOp() => {
+			case op @ ArOp() =>
 				
 				walkAny(e.lhs)
 				walkAny(e.rhs)
 				
 				main.invokeVirtual(CodeGen.varType, CodeGen.arHandler(op))
-			}
-			case op @ (GtOp() | LtOp() | GeOp() | LeOp() | EqOp() | NeOp() | InOp() | SubsetOp()) => {
+
+			case op @ (GtOp() | LtOp() | GeOp() | LeOp() | EqOp() | NeOp() | InOp() | SubsetOp()) =>
 				
 				walkAny(e.lhs)
 				walkAny(e.rhs)
@@ -408,24 +407,24 @@ class CodeGen private (
 				
 				// true
 				main.mark(trueLabel)
-				loadTrue
+				loadTrue()
 				main.goTo(retLabel)
 				
 				// false
 				main.mark(falseLabel)
-				loadFalse
+				loadFalse()
 				main.goTo(retLabel)
 				
 				// ret
 				main.mark(retLabel)
-			}
-			case op @ AndOp() => {
+
+			case op @ AndOp() =>
 				
 				val falseLabel = main.newLabel
 				val retLabel = main.newLabel
 
 				walkAny(e.lhs)
-				loadTrue
+				loadTrue()
 				main.ifCmp(classOf[BooleanVal], GeneratorAdapter.NE, falseLabel)
 
 				// true
@@ -434,22 +433,22 @@ class CodeGen private (
 				
 				// false
 				main.mark(falseLabel)
-				loadFalse
+				loadFalse()
 
 				// ret
 				main.mark(retLabel)
-			}
-			case op @ OrOp() => {
+
+			case op @ OrOp() =>
 				
 				val falseLabel = main.newLabel
 				val retLabel = main.newLabel
 
 				walkAny(e.lhs)
-				loadTrue
+				loadTrue()
 				main.ifCmp(classOf[BooleanVal], GeneratorAdapter.NE, falseLabel)
 
 				// true
-				loadTrue
+				loadTrue()
 				main.goTo(retLabel)
 				
 				// false
@@ -458,7 +457,7 @@ class CodeGen private (
 
 				// ret
 				main.mark(retLabel)
-			}
+
 			case (ImplOp() | NotinOp()) => throw new Error()
 		}
 	}
@@ -470,7 +469,7 @@ class CodeGen private (
 		val retLabel = main.newLabel
 		
 		walkAny(s.cond)
-		loadTrue
+		loadTrue()
 		main.ifCmp(classOf[BooleanVal], GeneratorAdapter.NE, falseLabel)
 		main.goTo(trueLabel)
 		
@@ -494,7 +493,7 @@ class CodeGen private (
 		
 		main.mark(condLabel)
 		walkAny(s.cond)
-		loadTrue
+		loadTrue()
 		main.ifCmp(classOf[BooleanVal], GeneratorAdapter.NE, retLabel)
 
 		walkAny(s.stmts)
@@ -510,7 +509,7 @@ class CodeGen private (
 		if (e.args.size > BaseVal.maxParams) {
 			main.newArray(CodeGen.varType)
 			for (i <- 0 until e.args.size)
-				main.dup
+				main.dup()
 			e.args.foldLeft(0) { (n:Int, arg:Expr) =>
 				main.push(n)
 				walkAny(arg)
@@ -543,7 +542,7 @@ class CodeGen private (
 		val c = cg.run
 		
 		main.newInstance(c)
-		main.dup
+		main.dup()
 		symAn.getUpvars(e).foreach { sym =>
 			if (sym.upvar.get.scope isLocalTo symAn.getSymTab(fun).get) {
 				loadVarRef(main, sym.upvar.get)
@@ -556,38 +555,37 @@ class CodeGen private (
 	}
 	
 	def wtfSyms(sym:Sym) = sym match {
-		case Sym(_, _, Sym.Upvar(), Some(upvar)) => {
+		case Sym(_, _, Sym.Upvar(), Some(upvar)) =>
 			"closed variable in a closure; " +
 			"stored in a field of the closure's instance; " +
 			"upvar refers to the real, Local/Param Sym"
-		}
-		case Sym(_, _, Sym.Local(), Some(upvar)) => {
+
+		case Sym(_, _, Sym.Local(), Some(upvar)) =>
 			"a local variable which is closed in some closure; " +
 			"upvar refers to the Upvar Sym"
-		}
-		case Sym(_, _, Sym.Local(), None) => {
+
+		case Sym(_, _, Sym.Local(), None) =>
 			"a local variable"
-		}
-		case Sym(_, _, Sym.Param(), None) => {
+
+		case Sym(_, _, Sym.Param(), None) =>
 			"an argument variable"
-		}
+
 		case _ => "invalid Sym"
 	}
 	
 	private def preStoreVar(m:GeneratorAdapter, sym:Sym) = sym match {
-		case Sym(_, _, Sym.Upvar(), Some(upvar)) => {
-			m.loadThis
+		case Sym(_, _, Sym.Upvar(), Some(upvar)) =>
+			m.loadThis()
 			m.getField(selfType, upvars.get(sym).get, CodeGen.upvarType)
-		}
-		case Sym(_, _, Sym.Local(), Some(upvar)) => {
+
+		case Sym(_, _, Sym.Local(), Some(upvar)) =>
 			m.loadLocal(sym.physAddr)
-		}
+
 		case Sym(_, _, _, _) => 
 	}
 	private def storeVar(m:GeneratorAdapter, sym:Sym) = sym match {
-		case Sym(_, _, Sym.Upvar(), Some(_)) | Sym(_, _, Sym.Local(), Some(_)) => {
+		case Sym(_, _, Sym.Upvar(), Some(_)) | Sym(_, _, Sym.Local(), Some(_)) =>
 			m.putField(CodeGen.upvarType, "ref", CodeGen.varType)
-		}
 		case Sym(_, _, Sym.Param(), None) =>
 			m.storeArg(sym.physAddr)
 		case Sym(_, _, Sym.Local(), None) =>
@@ -596,15 +594,13 @@ class CodeGen private (
 	}
 	
 	private def loadVar(m:GeneratorAdapter, sym:Sym) = sym match {
-		case Sym(_, _, Sym.Upvar(), Some(upvar)) => {
-			m.loadThis
+		case Sym(_, _, Sym.Upvar(), Some(upvar)) =>
+			m.loadThis()
 			m.getField(selfType, upvars.get(sym).get, CodeGen.upvarType)
 			m.getField(CodeGen.upvarType, "ref", CodeGen.varType)
-		}
-		case Sym(_, _, Sym.Local(), Some(upvar)) => {
+		case Sym(_, _, Sym.Local(), Some(upvar)) =>
 			m.loadLocal(sym.physAddr)
 			m.getField(CodeGen.upvarType, "ref", CodeGen.varType)
-		}
 		case Sym(_, _, Sym.Param(), None) =>
 			m.loadArg(sym.physAddr)
 		case Sym(_, _, Sym.Local(), None) =>
@@ -613,16 +609,14 @@ class CodeGen private (
 	}
 	
 	private def loadVarRef(m:GeneratorAdapter, sym:Sym) = sym match {
-		case Sym(_, _, Sym.Upvar(), Some(upvar)) => {
-			m.loadThis
+		case Sym(_, _, Sym.Upvar(), Some(upvar)) =>
+			m.loadThis()
 			m.getField(selfType, upvars.get(sym).get, CodeGen.upvarType)
-		}
-		case Sym(_, _, Sym.Local(), Some(upvar)) => {
+		case Sym(_, _, Sym.Local(), Some(upvar)) =>
 			m.loadLocal(sym.physAddr)
-		}
 		case _ => throw new Error()
 	}
-	
+
 	override def visitIdentifier(e:Identifier) {
 		val sym = symAn.getSym(e).get
 		accessModeAn.getAccessMode(e) match {
@@ -652,15 +646,15 @@ class CodeGen private (
 	}
 	
 	override def outNullExprStmt(s:NullExprStmt) {
-		main.pop
+		main.pop()
 	}
 	
 	override def visitReturnStmt(s:ReturnStmt) {
 		s.expr match {
 			case Some(expr) => walkAny(expr) 
-			case _ => loadUndefined 
+			case _ => loadUndefined()
 		}
-		main.returnValue
+		main.returnValue()
 	}
 	
 	override def outStmtsStmt(s:StmtsStmt) = Unit
