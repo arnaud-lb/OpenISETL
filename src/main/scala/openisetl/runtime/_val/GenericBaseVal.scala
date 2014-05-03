@@ -53,6 +53,7 @@ object BaseVal {
 	val slice = meth2("slice")
 	val subset = meth("subset")
 	val in = meth("in")
+	val iter = meth0("iter")
 }
 
 abstract class GenericBaseVal {
@@ -64,7 +65,7 @@ abstract class GenericBaseVal {
 		if(true) throw new ExecuteException("Invalid operation " + msg)
 		default
 	}
-	
+
 	private def invalid2[T](op:String, rhs:BaseVal, default:T = BooleanVal._true) : T = {
 		val msg = typeName + " " + op + " " + rhs.typeName
 		invalid1(msg, default);
@@ -115,7 +116,11 @@ abstract class GenericBaseVal {
 	def random() : BaseVal = {
 		invalid1("random(" + typeName + ")")
 	}
-	
+
+	def iter() : Iterator[BaseVal] = {
+		invalid1("iterate over a " + typeName, null)
+	}
+
 	def paramCount = -1
 	
 	def call() : BaseVal = call(Array.empty[BaseVal])

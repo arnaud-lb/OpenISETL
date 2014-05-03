@@ -501,7 +501,57 @@ class CodeGen private (
 		
 		main.mark(retLabel)
 	}
-	
+
+	override def visitForStmt(e:ForStmt) {
+
+		val iterType = Type.getType(classOf[Iterator[BaseVal]])
+		val iterHasNextMeth = classOf[Iterator[BaseVal]].getMethod("hasNext")
+		val iterNextMeth = classOf[Iterator[BaseVal]].getMethod("next")
+
+		walkAny(e.sub)
+
+		def visitLv(lv:Node, lvs:List[Node]) {
+
+			val nextLabel = main.newLabel
+			val retLabel = main.newLabel
+			val cleanLabel = main.newLabel
+
+			main.dup()
+			main.invokeVirtual(CodeGen.varType, BaseVal.iter)
+
+			main.mark(nextLabel)
+
+			main.dup()
+			main.invokeInterface(iterType, iterHasNextMeth)
+			main.ifZCmp(GeneratorAdapter.EQ, retLabel)
+
+			main.dup()
+			main.invokeInterface(iterType, iterNextMeth)
+			main.checkCast(CodeGen.varType)
+
+			preAssignAndSwap.walkAny(lv)
+			doAssign.walkAny(lv)
+
+			lvs match {
+				case lv_ :: lvs_ =>
+					main.swap()
+					visitLv(lv_, lvs_)
+					main.swap()
+				case List() => walkAny(e.stmts)
+			}
+
+			main.goTo(nextLabel)
+
+			main.mark(cleanLabel)
+			main.pop() // iter
+
+			main.mark(retLabel)
+			main.pop() // sub
+		}
+
+		visitLv(e.lvs.head, e.lvs.tail)
+	}
+
 	override def visitCallExpr(e:CallExpr) {
 		
 		walkAny(e.fun)
@@ -572,17 +622,22 @@ class CodeGen private (
 
 		case _ => "invalid Sym"
 	}
-	
-	private def preStoreVar(m:GeneratorAdapter, sym:Sym) = sym match {
+
+	private def preStoreVar(m:GeneratorAdapter, sym:Sym, swap:Boolean = false) = sym match {
 		case Sym(_, _, Sym.Upvar(), Some(upvar)) =>
 			m.loadThis()
 			m.getField(selfType, upvars.get(sym).get, CodeGen.upvarType)
-
+			if (swap) {
+				m.swap()
+			}
 		case Sym(_, _, Sym.Local(), Some(upvar)) =>
 			m.loadLocal(sym.physAddr)
-
-		case Sym(_, _, _, _) => 
+			if (swap) {
+				m.swap()
+			}
+		case Sym(_, _, _, _) =>
 	}
+
 	private def storeVar(m:GeneratorAdapter, sym:Sym) = sym match {
 		case Sym(_, _, Sym.Upvar(), Some(_)) | Sym(_, _, Sym.Local(), Some(_)) =>
 			m.putField(CodeGen.upvarType, "ref", CodeGen.varType)
@@ -631,7 +686,14 @@ class CodeGen private (
 			preStoreVar(main, sym)
 		}
 	}
-	
+
+	private object preAssignAndSwap extends DeepVisitorAdapter {
+		override def visitIdentifierLvalue(l:IdentifierLvalue) {
+			val sym = symAn.getSym(l.id).get
+			preStoreVar(main, sym, true)
+		}
+	}
+
 	private object doAssign extends DeepVisitorAdapter {
 		override def visitIdentifierLvalue(l:IdentifierLvalue) {
 			val sym = symAn.getSym(l.id).get

@@ -68,4 +68,6 @@ case class SetVal(final val value: Set[BaseVal])
 	override def in(lhs:BaseVal) = value contains lhs
 	
 	override def random = head
+
+	override def iter() = value.iterator
 }

@@ -68,7 +68,7 @@ case class TupleVal(final val value: TupleVal.valueType)
 		if (value.isEmpty) new TupleVal(value)
 		else new TupleVal(value.init)
 	}
-	
+
 	override def index(_index:BaseVal) : BaseVal = _index match {
 		case IntegerVal(i) => {
 			if (i < 1) throw new ExecuteException("Invalid index");
@@ -77,7 +77,8 @@ case class TupleVal(final val value: TupleVal.valueType)
 		}
 		case _ => super.index(_index)
 	}
-	
+
+
 	override def updated(_index:BaseVal, _val:BaseVal) : BaseVal = _index match {
 		case IntegerVal(i) => {
 			if (i < 1) throw new ExecuteException("Invalid index");
@@ -113,4 +114,6 @@ case class TupleVal(final val value: TupleVal.valueType)
 	}
 	
 	override def in(lhs:BaseVal) = value contains lhs
+
+	override def iter() = value.iterator
 }
