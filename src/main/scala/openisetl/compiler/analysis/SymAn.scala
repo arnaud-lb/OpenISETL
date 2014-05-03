@@ -12,6 +12,7 @@ import openisetl.compiler.parser.DeepVisitorAdapter
 import openisetl.compiler.node._
 import openisetl.compiler.Sym
 import openisetl.compiler.SymTab
+import openisetl.compiler.analysis.dataholder.AnDataHolderClient
 
 object SymAn {
 	val symTab = 0

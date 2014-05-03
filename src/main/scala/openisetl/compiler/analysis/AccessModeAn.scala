@@ -8,6 +8,7 @@ package openisetl.compiler.analysis
 
 import openisetl.compiler.parser.DeepVisitorAdapter
 import openisetl.compiler.node._
+import openisetl.compiler.analysis.dataholder.AnDataHolderClient
 
 object AccessModeAn {
 	sealed abstract class Mode()

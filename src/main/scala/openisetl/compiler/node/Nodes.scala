@@ -6,36 +6,7 @@
 
 
 package openisetl.compiler.node
-import scala.util.parsing.combinator.lexical.StdLexical
-import scala.util.parsing.combinator.lexical.StdLexical
-
-trait AnDataHolderClient {
-	def getAnData[T](h:AnDataHolder, k:Any) : Option[T] = {
-		h.getAnData(this) match {
-			case Some(d) => d.get(k) match {
-				case Some(v) => Some(v.asInstanceOf[T])
-				case _ => None
-			}
-			case _ => None
-		}
-	}
-	def setAnData(h:AnDataHolder, kv:(Any, Any)) = {
-		val anData : Map[Any,Any] = h.getAnData(this) match {
-			case Some(d) => d
-			case _ => Map.empty
-		}
-		h.setAnData(this, anData + kv)
-	}
-}
-
-trait AnDataHolder {
-	import scala.collection.mutable.WeakHashMap
-	import scala.collection.DefaultMap
-
-	val map = collection.mutable.Map.empty[Any, Map[Any,Any]];
-	def getAnData(h:Any) = map.get(h)
-	def setAnData(h:Any, d:Map[Any,Any]) : Unit = map += (h -> d)
-}
+import openisetl.compiler.analysis.dataholder.AnDataHolder
 
 class NodeExt[-T] { def unapply(o:T) = o != null }
 object Node extends NodeExt[Node]
