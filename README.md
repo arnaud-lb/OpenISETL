@@ -20,12 +20,12 @@ ISETL is a dynamically typed, mostly functional language with first class functi
 - Types: bool, int, bignum, real, set, tuple, undefined, func
 - Control structures: if/elseif/else, for, while
 - Anonymous functions, closures with lexical variables
+- Destructuring assignments
 
 ### Non implemented features
 
 - Unary ops: +, -, not
 - Control structures: forall, choose, exists
-- Destructuring assignments
 
 The Implementation
 ------------------

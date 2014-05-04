@@ -510,6 +510,23 @@ class CodeGen private (
 
 		walkAny(e.sub)
 
+		def assign(node:Node) : Unit = {
+			node match {
+				case MultipleLvalue(lvs) =>
+					lvs.foldLeft(1) { (n:Int, lv:Lvalue) =>
+						main.dup() // expr
+						loadInteger(n)
+						main.invokeVirtual(CodeGen.varType, BaseVal.index)
+						assign(lv)
+						n + 1
+					}
+					main.pop() // expr
+				case _ =>
+					preAssignAndSwap.walkAny(node)
+					doAssign.walkAny(node)
+			}
+		}
+
 		def visitLv(lv:Node, lvs:List[Node]) {
 
 			val nextLabel = main.newLabel
@@ -529,8 +546,7 @@ class CodeGen private (
 			main.invokeInterface(iterType, iterNextMeth)
 			main.checkCast(CodeGen.varType)
 
-			preAssignAndSwap.walkAny(lv)
-			doAssign.walkAny(lv)
+			assign(lv)
 
 			lvs match {
 				case lv_ :: lvs_ =>
@@ -702,9 +718,33 @@ class CodeGen private (
 	}
 	
 	override def visitAssignStmt(s:AssignStmt) {
-		preAssign.walkAny(s.lv)
-		super.walkAny(s.expr)
-		doAssign.walkAny(s.lv)
+
+		def multi(lvs:List[Lvalue]) : Unit = {
+			lvs.foldLeft(1) { (n:Int, lv:Lvalue) =>
+				main.dup() // expr
+				loadInteger(n)
+				main.invokeVirtual(CodeGen.varType, BaseVal.index)
+				lv match {
+					case MultipleLvalue(lvs) =>
+						multi(lvs)
+					case _ =>
+						preAssignAndSwap.walkAny(lv)
+						doAssign.walkAny(lv)
+				}
+				n + 1
+			}
+			main.pop()
+		}
+
+		s.lv match {
+			case MultipleLvalue(lvs) =>
+				super.walkAny(s.expr)
+				multi(lvs)
+			case _ =>
+				preAssign.walkAny(s.lv)
+				super.walkAny(s.expr)
+				doAssign.walkAny(s.lv)
+		}
 	}
 	
 	override def outNullExprStmt(s:NullExprStmt) {
