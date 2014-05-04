@@ -70,4 +70,6 @@ case class SetVal(final val value: Set[BaseVal])
 	override def random = head
 
 	override def iter() = value.iterator
+
+	override def size() = new IntegerVal(value.size)
 }

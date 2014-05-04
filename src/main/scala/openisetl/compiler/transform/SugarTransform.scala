@@ -29,7 +29,7 @@ class SugarTransform extends TransformVisitorAdapter {
 			visitCallExpr(CallExpr(Identifier("coalesce"), List(l,r)))
 		}
 		case UnopExpr(e,SizeOp()) => {
-			visitCallExpr(CallExpr(Identifier("count"), List(e)))
+			visitCallExpr(CallExpr(Identifier("__count"), List(e)))
 		}
 		case SetExpr(args) => {
 			visitCallExpr(CallExpr(Identifier("set_create"), args))

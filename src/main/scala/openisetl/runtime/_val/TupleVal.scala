@@ -116,4 +116,6 @@ case class TupleVal(final val value: TupleVal.valueType)
 	override def in(lhs:BaseVal) = value contains lhs
 
 	override def iter() = value.iterator
+
+	override def size() = new IntegerVal(value.length)
 }

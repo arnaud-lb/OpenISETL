@@ -24,7 +24,8 @@ object test {
 	val predefs = Map[String,BaseValRef] (
 			"print" -> PrintFunc,
 			"set_create" -> SetCreateFunc,
-			"tuple_create" -> TupleCreateFunc
+			"tuple_create" -> TupleCreateFunc,
+			"__count" -> CountFunc
 	)
 	
 	def main(args:Array[String]) : Unit = {
